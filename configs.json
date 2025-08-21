@@ -1,0 +1,68 @@
+{
+    "chat": {
+        "system_prompt": "You are a helpful AI Agent for a health company. Your role is to answer stakeholders' questions, primarily from doctors. You have access to health documents and reports, and should rely on them when answering. Use the provided context below to answer the question. If the answer is not in the context, respond that you don’t know — do not make one up. Keep your answers clear. Format your answer in the same language of the user question.",
+        "llm_model": {
+            "name": "gemini-2.0-flash", 
+            "temperature": 0, 
+            "max_tokens": 5000, 
+            "top_p": 0.9, 
+            "top_k": 40,
+            "api_env_var_name": "GOOGLE_API_KEY"
+        },
+        "welcome_messages": [
+            "Olá! Eu sou o Agente Health e estou aqui para lhe ajudar a interpretar dados epidemiológicos de forma eficiente e precisa. Como posso ajudar hoje?",
+            "Alguns exemplos de perguntas que você pode fazer incluem:",
+            "- <span class='suggestion'>Quantos casos de Zika foram registrados na União Europeia em 2021 e quais países notificaram?</span>",
+            "- <span class='suggestion submit'>Qual a taxa de sucesso do tratamento da tuberculose em pacientes notificados em 2020?</span>"
+            ]
+    },
+    "rag": {
+        "database_path": "database",
+        "chunk_size": 25000,
+        "chunk_overlap": 200,
+        "embedding_model": {
+            "name": "models/embedding-001",
+            "task_type": "retrieval_document"
+        },
+        "retriever": {
+            "search_type": "mmr",
+            "search_kwargs": {
+                "k": 7
+            }
+        },
+        "prompts_examples": {
+            "Zika": [
+                "Quantos casos de Zika foram registrados na União Europeia em 2021 e quais países notificaram?",
+                "Qual foi a origem geográfica das infecções de Zika reportadas em 2021?",
+                "Houve casos autóctones de Zika transmitidos por mosquitos na Europa em 2021?",
+                "Qual é o perfil etário e de gênero das pessoas afetadas por Zika em 2021?",
+                "Houve registros de infecção por Zika em gestantes? Se sim, quais os desfechos?",
+                "Quais medidas preventivas são recomendadas para viajantes que retornam de áreas endêmicas de Zika?",
+                "Como a pandemia de COVID-19 pode ter afetado a vigilância e notificação de casos de Zika?"
+            ],
+            "Sífilis": [
+                "Qual foi o número total de casos de sífilis confirmados em 2021 na União Europeia?",
+                "Quais países apresentaram as maiores taxas de notificação de sífilis em 2021?",
+                "Como a distribuição da sífilis difere entre homens e mulheres?",
+                "Qual faixa etária apresenta a maior incidência de sífilis?",
+                "Qual a proporção de casos atribuída a homens que fazem sexo com homens (MSM)?",
+                "Qual a taxa de coinfecção sífilis-HIV em MSM e na população geral?",
+                "Quais fatores de risco comportamentais têm sido associados ao aumento da sífilis na Europa?",
+                "Houve impacto da pandemia de COVID-19 na detecção de sífilis em 2020 e 2021?"
+            ],
+            "Tuberculose": [
+                "Quantos casos de tuberculose foram notificados em 2021 na União Europeia e qual a taxa por 100 mil habitantes?",
+                "Quais países concentram a maioria dos casos de tuberculose?",
+                "Qual a taxa de sucesso do tratamento da tuberculose em pacientes notificados em 2020?",
+                "Qual a prevalência de tuberculose multirresistente (MDR) e extensivamente resistente (XDR) na Europa em 2021?",
+                "Qual a meta da OMS para reduzir a tuberculose até 2030 e a União Europeia está no caminho certo para alcançá-la?"
+            ]
+        }
+    },
+    "ui": {
+        "app_title": "🤖 Agente de IA da Saúde"
+    },
+    "server": {
+        "env_file_path": ".env"
+    }
+}
