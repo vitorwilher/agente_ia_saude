@@ -21,7 +21,7 @@
         "chunk_size": 25000,
         "chunk_overlap": 200,
         "embedding_model": {
-            "name": "models/embedding-001",
+            "name": "models/text-embedding-004",
             "task_type": "retrieval_document"
         },
         "retriever": {

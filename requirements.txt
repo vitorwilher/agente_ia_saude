@@ -5,6 +5,5 @@ chromadb
 pypdf
 shiny
 python-dotenv
-chatlas>=0.4.0
 google-genai
 rsconnect-python

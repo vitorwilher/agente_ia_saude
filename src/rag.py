@@ -8,9 +8,13 @@ from dotenv import load_dotenv
 from globals import configs
 import os
 
+# Resolve paths relative to this file's location (src/ → project root)
+_base_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.join(_base_dir, "..")
+
 # Load documents from PDFs in the specified directory
 pdf_loader = DirectoryLoader(
-    path = configs["rag"]["database_path"], 
+    path = os.path.join(_project_root, configs["rag"]["database_path"]),
     glob = "*.pdf",
     loader_cls = PyPDFLoader
 )
@@ -26,7 +30,7 @@ chunks = RecursiveCharacterTextSplitter(
     ).split_documents(documents)
 
 # Define the embedding model
-_ = load_dotenv(configs["server"]["env_file_path"])
+_ = load_dotenv(os.path.join(_project_root, configs["server"]["env_file_path"]))
 embeddings = GoogleGenerativeAIEmbeddings(
     model = configs["rag"]["embedding_model"]["name"],
     google_api_key = os.environ.get(configs["chat"]["llm_model"]["api_env_var_name"]),
