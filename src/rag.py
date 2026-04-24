@@ -1,88 +1,65 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain_community.vectorstores import Chroma
-from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
-from dotenv import load_dotenv
-from globals import configs
-import os
+"""RAG primitives: embeddings, LLM, vector store, retriever.
 
-# Resolve paths relative to this file's location (src/ → project root)
-_base_dir = os.path.dirname(os.path.abspath(__file__))
-_project_root = os.path.join(_base_dir, "..")
-
-# Load documents from PDFs in the specified directory
-pdf_loader = DirectoryLoader(
-    path = os.path.join(_project_root, configs["rag"]["database_path"]),
-    glob = "*.pdf",
-    loader_cls = PyPDFLoader
-)
-documents = []
-documents.extend(pdf_loader.load())
-
-# Split documents into smaller chunks for processing
-chunks = RecursiveCharacterTextSplitter(
-    chunk_size = configs["rag"]["chunk_size"],
-    chunk_overlap = configs["rag"]["chunk_overlap"],
-    length_function = len,
-    is_separator_regex = False
-    ).split_documents(documents)
-
-# Define the embedding model
-_ = load_dotenv(os.path.join(_project_root, configs["server"]["env_file_path"]))
-embeddings = GoogleGenerativeAIEmbeddings(
-    model = configs["rag"]["embedding_model"]["name"],
-    google_api_key = os.environ.get(configs["chat"]["llm_model"]["api_env_var_name"]),
-    task_type = configs["rag"]["embedding_model"]["task_type"]
-    )
-
-# Define the language model
-llm = ChatGoogleGenerativeAI(
-    model = configs["chat"]["llm_model"]["name"],
-    google_api_key = os.environ.get(configs["chat"]["llm_model"]["api_env_var_name"]),
-    temperature = configs["chat"]["llm_model"]["temperature"],
-    max_output_tokens = configs["chat"]["llm_model"]["max_tokens"],
-    top_k = configs["chat"]["llm_model"]["top_k"],
-    top_p = configs["chat"]["llm_model"]["top_p"]
-    )
-
-# Create a vector store from the document chunks using the embeddings
-vector_store = Chroma.from_documents(documents = chunks, embedding = embeddings)
-
-# Define the prompt template for the RetrievalQA chain
-template = f'{configs["chat"]["system_prompt"]}' + """
-
-Context:
-{context}
-
-Question:
-{question}
-
-Answer:
+Split from the previous monolithic script so the vector store can be built
+once (via src/index.py) and loaded cheaply on every app startup.
 """
 
-# Create the RetrievalQA chain
-chat_qa = RetrievalQA.from_chain_type(
-    llm = llm,
-    retriever = vector_store.as_retriever(
-        search_type = configs["rag"]["retriever"]["search_type"], 
-        search_kwargs = configs["rag"]["retriever"]["search_kwargs"]
-        ),
-    return_source_documents = True,
-    chain_type_kwargs = {"prompt": PromptTemplate.from_template(template)}
-)
+import os
 
-# Function to invoke the chat QA system
-def invoke_qa(prompt: str):
-    """
-    Invoke the chat QA system with the provided prompt.
-    
-    Args:
-        prompt (str): A dictionary containing the query.
-        
-    Returns:
-        str: The result of the chat QA invocation.
-    """
-    response = chat_qa.invoke({"query": prompt})
-    return response["result"]
+from dotenv import load_dotenv
+from langchain_chroma import Chroma
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+
+from globals import configs
+
+_base_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.abspath(os.path.join(_base_dir, ".."))
+
+load_dotenv(os.path.join(_project_root, configs["server"]["env_file_path"]))
+
+
+def project_path(relative: str) -> str:
+    return os.path.join(_project_root, relative)
+
+
+def get_embeddings() -> GoogleGenerativeAIEmbeddings:
+    return GoogleGenerativeAIEmbeddings(
+        model=configs["rag"]["embedding_model"]["name"],
+        google_api_key=os.environ.get(configs["chat"]["llm_model"]["api_env_var_name"]),
+        task_type=configs["rag"]["embedding_model"]["task_type"],
+        transport="rest",
+    )
+
+
+def get_llm() -> ChatGoogleGenerativeAI:
+    return ChatGoogleGenerativeAI(
+        model=configs["chat"]["llm_model"]["name"],
+        google_api_key=os.environ.get(configs["chat"]["llm_model"]["api_env_var_name"]),
+        temperature=configs["chat"]["llm_model"]["temperature"],
+        max_output_tokens=configs["chat"]["llm_model"]["max_tokens"],
+        top_k=configs["chat"]["llm_model"]["top_k"],
+        top_p=configs["chat"]["llm_model"]["top_p"],
+        transport="rest",
+    )
+
+
+def load_vector_store() -> Chroma:
+    """Load the persisted Chroma store. Raises if it hasn't been built yet."""
+    persist_dir = project_path(configs["rag"]["persist_dir"])
+    if not os.path.isdir(persist_dir) or not os.listdir(persist_dir):
+        raise RuntimeError(
+            f"Vector store not found at {persist_dir!r}. "
+            "Run `python src/index.py` first to index the PDFs."
+        )
+    return Chroma(
+        collection_name=configs["rag"]["collection_name"],
+        embedding_function=get_embeddings(),
+        persist_directory=persist_dir,
+    )
+
+
+def get_retriever():
+    return load_vector_store().as_retriever(
+        search_type=configs["rag"]["retriever"]["search_type"],
+        search_kwargs=configs["rag"]["retriever"]["search_kwargs"],
+    )

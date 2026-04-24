@@ -2,7 +2,7 @@
     "chat": {
         "system_prompt": "You are a helpful AI Agent for a health company. Your role is to answer stakeholders' questions, primarily from doctors. You have access to health documents and reports, and should rely on them when answering. Use the provided context below to answer the question. If the answer is not in the context, respond that you don’t know — do not make one up. Keep your answers clear. Format your answer in the same language of the user question.",
         "llm_model": {
-            "name": "gemini-2.0-flash", 
+            "name": "gemini-2.5-flash",
             "temperature": 0, 
             "max_tokens": 5000, 
             "top_p": 0.9, 
@@ -18,10 +18,12 @@
     },
     "rag": {
         "database_path": "database",
-        "chunk_size": 25000,
+        "persist_dir": "chroma_db",
+        "collection_name": "health_reports",
+        "chunk_size": 1500,
         "chunk_overlap": 200,
         "embedding_model": {
-            "name": "models/text-embedding-004",
+            "name": "models/gemini-embedding-001",
             "task_type": "retrieval_document"
         },
         "retriever": {
@@ -58,6 +60,9 @@
                 "Qual a meta da OMS para reduzir a tuberculose até 2030 e a União Europeia está no caminho certo para alcançá-la?"
             ]
         }
+    },
+    "agent": {
+        "system_prompt": "Você é um Agente de IA de uma empresa de saúde. Seu papel é responder perguntas de stakeholders, principalmente médicos, sobre relatórios epidemiológicos europeus (ECDC) de Zika, Sífilis e Tuberculose de 2021.\n\nVocê tem acesso a uma ferramenta chamada `search_health_documents` que busca trechos relevantes nesses relatórios. Use-a sempre que a pergunta exigir dados factuais, números, taxas, recomendações ou definições. Você pode chamá-la mais de uma vez para refinar a busca.\n\nRegras:\n- Nunca invente dados. Se o contexto recuperado não cobrir a pergunta, diga que não sabe.\n- Cite números exatos quando disponíveis.\n- Responda no mesmo idioma da pergunta do usuário.\n- Para cumprimentos ou perguntas fora do escopo dos relatórios, responda diretamente sem chamar a ferramenta."
     },
     "ui": {
         "app_title": "🤖 Agente de IA da Saúde"
